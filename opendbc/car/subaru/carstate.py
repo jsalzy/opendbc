@@ -21,7 +21,8 @@ class CarState(CarStateBase):
     cp_alt = can_parsers[Bus.alt]
     ret = structs.CarState()
 
-    throttle_msg = cp.vl["Throttle"] if not (self.CP.flags & SubaruFlags.HYBRID) else cp_alt.vl["Throttle_Hybrid"]
+    cp_throttle = cp_alt if self.CP.flags & SubaruFlags.THROTTLE_ON_ALT_BUS else cp
+    throttle_msg = cp_throttle.vl["Throttle"] if not (self.CP.flags & SubaruFlags.HYBRID) else cp_alt.vl["Throttle_Hybrid"]
     ret.gasPressed = throttle_msg["Throttle_Pedal"] > 1e-5
     if self.CP.flags & SubaruFlags.PREGLOBAL:
       ret.brakePressed = cp.vl["Brake_Pedal"]["Brake_Pedal"] > 0

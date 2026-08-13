@@ -1,0 +1,21 @@
+CM_ "IMPORT _subaru_global.dbc";
+CM_ "IMPORT subaru_global_2017.dbc";
+
+CM_ "
+2026+ Subaru Global platform (7th gen Outback).
+
+Steering_2 (0x11a) moved Steering_Angle within the payload. On 2023-2025 angle-LKAS
+cars the signal sits at bit 24 (bytes 3-4), which reads a constant zero on 2026 cars.
+The live angle is at bit 47 (byte 5 bit 7 through byte 7), same 17-bit little-endian
+signed encoding and same -0.01 deg/LSB scaling.
+
+Verified against 2026 Outback logs: cross-checked against Steering (0x2) Steering_Angle
+to a median of 0.36-0.84 deg over ~36k samples, and lock-to-lock steering reads a
+symmetric -462 deg / +461 deg. Redefining the message here overrides the definition
+imported from _subaru_global.dbc.
+";
+
+BO_ 282 Steering_2: 8 XXX
+ SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
+ SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
+ SG_ Steering_Angle : 47|17@1- (-0.01,0) [-600|600] "deg" XXX

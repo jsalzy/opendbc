@@ -65,6 +65,9 @@ class SubaruSafetyFlags(IntFlag):
   LONG = 2
   PREGLOBAL_REVERSED_DRIVER_TORQUE = 4
   LKAS_ANGLE = 8
+  # Steering_2 carries the measured angle at bit 47 instead of bit 24. The panda parses this
+  # message itself to enforce angle limits, so it must track the same position as the DBC.
+  LKAS_ANGLE_ALT_POSITION = 16
 
 
 class SubaruFlags(IntFlag):
@@ -81,6 +84,15 @@ class SubaruFlags(IntFlag):
   PREGLOBAL = 16
   HYBRID = 32
   LKAS_ANGLE = 64
+
+  # Cars that only broadcast Throttle (0x40) on the alt (powertrain) bus, not the main bus.
+  # Reading it from the main bus leaves the message permanently missing, which invalidates
+  # the whole main bus CAN parser and blocks engagement with a canError.
+  THROTTLE_ON_ALT_BUS = 128
+
+  # Cars where Steering_2 (0x11a) carries Steering_Angle at bit 47 rather than bit 24.
+  # Must be kept in sync with the DBC and with the panda's own parsing of this message.
+  ANGLE_ALT_POSITION = 256
 
 
 GLOBAL_ES_ADDR = 0x787
@@ -223,6 +235,17 @@ class CAR(Platforms):
     [SubaruCarDocs("Subaru Crosstrek 2025", "All", car_parts=CarParts.common([CarHarness.subaru_d]))],
     CarSpecs(mass=1529, wheelbase=2.5781, steerRatio=13.5),
     flags=SubaruFlags.LKAS_ANGLE
+  )
+  # 7th gen. wheelbase 108.1 in and curb weight from the 2026 Touring XT.
+  # steerRatio measured from logs: Ackermann fit over low-speed full-lock maneuvers gives a
+  # median of 15.5, stable within +-0.6 across 25-600 deg of steering and 1.5-9 m/s.
+  # tireStiffnessFactor fit against 25k highway samples; the optimum is flat over 0.70-0.80 and
+  # road roll was not modelled, so treat it as a starting point for paramsd to refine.
+  SUBARU_OUTBACK_2026 = SubaruGen2PlatformConfig(
+    [SubaruCarDocs("Subaru Outback 2026", "All", car_parts=CarParts.common([CarHarness.subaru_d]))],
+    CarSpecs(mass=1806, wheelbase=2.746, steerRatio=15.5, tireStiffnessFactor=0.75),
+    {Bus.pt: 'subaru_global_2026_generated'},
+    flags=SubaruFlags.LKAS_ANGLE | SubaruFlags.THROTTLE_ON_ALT_BUS | SubaruFlags.ANGLE_ALT_POSITION,
   )
 
 

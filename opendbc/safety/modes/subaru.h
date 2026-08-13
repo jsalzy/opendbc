@@ -84,6 +84,7 @@
 static bool subaru_gen2 = false;
 static bool subaru_longitudinal = false;
 static bool subaru_lkas_angle = false;
+static bool subaru_lkas_angle_alt_position = false;
 
 static uint32_t subaru_get_checksum(const CANPacket_t *msg) {
   return (uint8_t)msg->data[0];
@@ -107,7 +108,9 @@ static void subaru_rx_hook(const CANPacket_t *msg) {
 
   if (subaru_lkas_angle) {
     if ((msg->addr == MSG_SUBARU_Steering_2) && (msg->bus == SUBARU_MAIN_BUS)) {
-      uint32_t raw = GET_BYTES(msg, 3, 3);
+      // 17-bit signed angle. Most angle-LKAS cars carry it at bit 24 (bytes 3-5); some
+      // carry it at bit 47 (byte 5 bit 7 through byte 7). Must match the DBC.
+      uint32_t raw = subaru_lkas_angle_alt_position ? (GET_BYTES(msg, 5, 3) >> 7) : GET_BYTES(msg, 3, 3);
       raw &= 0x1FFFFU;
       int angle_meas_new = -to_signed(raw, 17);
       update_sample(&angle_meas, angle_meas_new);
@@ -304,6 +307,9 @@ static safety_config subaru_init(uint16_t param) {
 
   const uint16_t SUBARU_PARAM_LKAS_ANGLE = 8;
   subaru_lkas_angle = GET_FLAG(param, SUBARU_PARAM_LKAS_ANGLE);
+
+  const uint16_t SUBARU_PARAM_LKAS_ANGLE_ALT_POSITION = 16;
+  subaru_lkas_angle_alt_position = GET_FLAG(param, SUBARU_PARAM_LKAS_ANGLE_ALT_POSITION);
 #endif
 
   safety_config ret;
