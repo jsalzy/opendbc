@@ -68,6 +68,9 @@ class SubaruSafetyFlags(IntFlag):
   # Steering_2 carries the measured angle at bit 47 instead of bit 24. The panda parses this
   # message itself to enforce angle limits, so it must track the same position as the DBC.
   LKAS_ANGLE_ALT_POSITION = 16
+  # Throttle is only on the alt bus. The panda has its own rx checks and would otherwise wait
+  # forever for it on the main bus, which invalidates the checks and blocks controls.
+  THROTTLE_ON_ALT_BUS = 32
 
 
 class SubaruFlags(IntFlag):

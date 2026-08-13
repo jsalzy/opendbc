@@ -72,8 +72,8 @@
   {.msg = {{MSG_SUBARU_Brake_Status,    alt_bus,         8, 50U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
   {.msg = {{MSG_SUBARU_CruiseControl,   alt_bus,         8, 20U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
 
-#define SUBARU_LKAS_ANGLE_RX_CHECKS(alt_bus)                                                                            \
-  {.msg = {{MSG_SUBARU_Throttle,        SUBARU_MAIN_BUS, 8, 100U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
+#define SUBARU_LKAS_ANGLE_RX_CHECKS(alt_bus, throttle_bus)                                                              \
+  {.msg = {{MSG_SUBARU_Throttle,        throttle_bus,    8, 100U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
   {.msg = {{MSG_SUBARU_Steering_Torque, SUBARU_MAIN_BUS, 8, 50U,  .max_counter = 15U, .ignore_quality_flag = true},  { 0 }, { 0 }}},  \
   {.msg = {{MSG_SUBARU_Wheel_Speeds,    alt_bus,         8, 50U,  .max_counter = 15U, .ignore_quality_flag = true},  { 0 }, { 0 }}},  \
   {.msg = {{MSG_SUBARU_Brake_Status,    alt_bus,         8, 50U,  .max_counter = 15U, .ignore_quality_flag = true},  { 0 }, { 0 }}},  \
@@ -85,6 +85,7 @@ static bool subaru_gen2 = false;
 static bool subaru_longitudinal = false;
 static bool subaru_lkas_angle = false;
 static bool subaru_lkas_angle_alt_position = false;
+static bool subaru_throttle_on_alt_bus = false;
 
 static uint32_t subaru_get_checksum(const CANPacket_t *msg) {
   return (uint8_t)msg->data[0];
@@ -295,7 +296,13 @@ static safety_config subaru_init(uint16_t param) {
   };
 
   static RxCheck subaru_lkas_angle_rx_checks[] = {
-    SUBARU_LKAS_ANGLE_RX_CHECKS(SUBARU_ALT_BUS)
+    SUBARU_LKAS_ANGLE_RX_CHECKS(SUBARU_ALT_BUS, SUBARU_MAIN_BUS)
+  };
+
+  // Some cars only broadcast Throttle on the alt bus. Checking the main bus there means the
+  // message never arrives, which lags out the rx checks and pins controls_allowed to false.
+  static RxCheck subaru_lkas_angle_alt_throttle_rx_checks[] = {
+    SUBARU_LKAS_ANGLE_RX_CHECKS(SUBARU_ALT_BUS, SUBARU_ALT_BUS)
   };
 
   const uint16_t SUBARU_PARAM_GEN2 = 1;
@@ -310,12 +317,20 @@ static safety_config subaru_init(uint16_t param) {
 
   const uint16_t SUBARU_PARAM_LKAS_ANGLE_ALT_POSITION = 16;
   subaru_lkas_angle_alt_position = GET_FLAG(param, SUBARU_PARAM_LKAS_ANGLE_ALT_POSITION);
+
+  const uint16_t SUBARU_PARAM_THROTTLE_ON_ALT_BUS = 32;
+  subaru_throttle_on_alt_bus = GET_FLAG(param, SUBARU_PARAM_THROTTLE_ON_ALT_BUS);
 #endif
 
   safety_config ret;
   if (subaru_lkas_angle) {
+    if (subaru_throttle_on_alt_bus) {
+      ret = subaru_longitudinal ? BUILD_SAFETY_CFG(subaru_lkas_angle_alt_throttle_rx_checks, SUBARU_LKAS_ANGLE_LONG_TX_MSGS) : \
+                                  BUILD_SAFETY_CFG(subaru_lkas_angle_alt_throttle_rx_checks, SUBARU_LKAS_ANGLE_TX_MSGS);
+    } else {
     ret = subaru_longitudinal ? BUILD_SAFETY_CFG(subaru_lkas_angle_rx_checks, SUBARU_LKAS_ANGLE_LONG_TX_MSGS) : \
                                 BUILD_SAFETY_CFG(subaru_lkas_angle_rx_checks, SUBARU_LKAS_ANGLE_TX_MSGS);
+    }
   } else if (subaru_gen2) {
     ret = subaru_longitudinal ? BUILD_SAFETY_CFG(subaru_gen2_rx_checks, SUBARU_GEN2_LONG_TX_MSGS) : \
                                 BUILD_SAFETY_CFG(subaru_gen2_rx_checks, SUBARU_GEN2_TX_MSGS);

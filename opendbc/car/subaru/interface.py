@@ -53,6 +53,8 @@ class CarInterface(CarInterfaceBase):
       ret.safetyConfigs[0].safetyParam |= SubaruSafetyFlags.LKAS_ANGLE.value
       if ret.flags & SubaruFlags.ANGLE_ALT_POSITION:
         ret.safetyConfigs[0].safetyParam |= SubaruSafetyFlags.LKAS_ANGLE_ALT_POSITION.value
+      if ret.flags & SubaruFlags.THROTTLE_ON_ALT_BUS:
+        ret.safetyConfigs[0].safetyParam |= SubaruSafetyFlags.THROTTLE_ON_ALT_BUS.value
 
     elif candidate == CAR.SUBARU_ASCENT:
       ret.steerActuatorDelay = 0.3  # end-to-end angle controller
