@@ -67,7 +67,14 @@ def create_es_distance(packer, frame, es_distance_msg, bus, pcm_cancel_cmd, long
   return packer.make_can_msg("ES_Distance", bus, values)
 
 
-def create_es_lkas_state(packer, frame, es_lkas_state_msg, enabled, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart):
+def create_es_lkas_state(packer, frame, es_lkas_state_msg, enabled, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart, passthrough=False):
+  # Diagnostic: reproduce the camera's message untouched.
+  # Copy every signal the DBC defines, so nothing unnamed gets zeroed on repack.
+  if passthrough:
+    values = dict(es_lkas_state_msg)
+    values["COUNTER"] = frame % 0x10
+    return packer.make_can_msg("ES_LKAS_State", CanBus.main, values)
+
   values = {s: es_lkas_state_msg[s] for s in [
     "CHECKSUM",
     "LKAS_Alert_Msg",
@@ -131,7 +138,14 @@ def create_es_lkas_state(packer, frame, es_lkas_state_msg, enabled, visual_alert
   return packer.make_can_msg("ES_LKAS_State", CanBus.main, values)
 
 
-def create_es_dashstatus(packer, frame, dashstatus_msg, enabled, long_enabled, long_active, lead_visible):
+def create_es_dashstatus(packer, frame, dashstatus_msg, enabled, long_enabled, long_active, lead_visible, passthrough=False):
+  # Diagnostic: reproduce the camera's message untouched. Leaves the steering angle as the only thing openpilot changes.
+  # Copy every signal the DBC defines, so nothing unnamed gets zeroed on repack.
+  if passthrough:
+    values = dict(dashstatus_msg)
+    values["COUNTER"] = frame % 0x10
+    return packer.make_can_msg("ES_DashStatus", CanBus.main, values)
+
   values = {s: dashstatus_msg[s] for s in [
     "CHECKSUM",
     "PCB_Off",
@@ -231,7 +245,14 @@ def create_es_status(packer, frame, es_status_msg, long_enabled, long_active, cr
   return packer.make_can_msg("ES_Status", CanBus.main, values)
 
 
-def create_es_infotainment(packer, frame, es_infotainment_msg, visual_alert):
+def create_es_infotainment(packer, frame, es_infotainment_msg, visual_alert, passthrough=False):
+  # Diagnostic: reproduce the camera's message untouched.
+  # Copy every signal the DBC defines, so nothing unnamed gets zeroed on repack.
+  if passthrough:
+    values = dict(es_infotainment_msg)
+    values["COUNTER"] = frame % 0x10
+    return packer.make_can_msg("ES_Infotainment", CanBus.main, values)
+
   # Filter stock LKAS disabled and Keep hands on steering wheel OFF alerts
   values = {s: es_infotainment_msg[s] for s in [
     "CHECKSUM",

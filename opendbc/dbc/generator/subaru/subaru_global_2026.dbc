@@ -19,3 +19,20 @@ BO_ 282 Steering_2: 8 XXX
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
  SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
  SG_ Steering_Angle : 47|17@1- (-0.01,0) [-600|600] "deg" XXX
+
+CM_ "
+ES_Infotainment only had signals defined up to bit 24. Bytes 4-7 carry data on this
+car, and openpilot rebuilds this message by copying the camera's signals, so anything
+the DBC does not name is silently zeroed on the way out. Cover the remaining bits so a
+copy is faithful.
+";
+
+BO_ 803 ES_Infotainment: 8 XXX
+ SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
+ SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
+ SG_ LKAS_Blue_Lines : 15|4@0+ (1,0) [0|15] "" XXX
+ SG_ Signal1 : 19|4@0+ (1,0) [0|15] "" XXX
+ SG_ LKAS_State_Infotainment : 22|3@0+ (1,0) [0|7] "" XXX
+ SG_ Signal2 : 24|1@0+ (1,0) [0|1] "" XXX
+ SG_ Signal3 : 25|7@1+ (1,0) [0|127] "" XXX
+ SG_ Signal4 : 32|32@1+ (1,0) [0|4294967295] "" XXX

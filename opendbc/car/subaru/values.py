@@ -97,6 +97,11 @@ class SubaruFlags(IntFlag):
   # Must be kept in sync with the DBC and with the panda's own parsing of this message.
   ANGLE_ALT_POSITION = 256
 
+  # Diagnostic: forward the camera's ES_DashStatus/ES_LKAS_State/ES_Infotainment
+  # untouched, so the steering angle is the only thing openpilot changes on the bus.
+  # Narrows down why the 2026 Outback ignores an otherwise valid angle command.
+  HUD_PASSTHROUGH = 512
+
 
 GLOBAL_ES_ADDR = 0x787
 GEN2_ES_BUTTONS_DID = b'\x11\x30'
@@ -248,7 +253,8 @@ class CAR(Platforms):
     [SubaruCarDocs("Subaru Outback 2026", "All", car_parts=CarParts.common([CarHarness.subaru_d]))],
     CarSpecs(mass=1806, wheelbase=2.746, steerRatio=15.5, tireStiffnessFactor=0.75),
     {Bus.pt: 'subaru_global_2026_generated'},
-    flags=SubaruFlags.LKAS_ANGLE | SubaruFlags.THROTTLE_ON_ALT_BUS | SubaruFlags.ANGLE_ALT_POSITION,
+    flags=SubaruFlags.LKAS_ANGLE | SubaruFlags.THROTTLE_ON_ALT_BUS | SubaruFlags.ANGLE_ALT_POSITION |
+          SubaruFlags.HUD_PASSTHROUGH,
   )
 
 
