@@ -120,6 +120,11 @@ class CarState(CarStateBase):
                      (cp_cam.vl["ES_LKAS_State"]["LKAS_Alert"] == 2)
 
       self.es_lkas_state_msg = copy.copy(cp_cam.vl["ES_LKAS_State"])
+
+      # On these cars the EPS ignores our angle command unless the car itself has lane
+      # keeping switched on, so refuse to engage rather than steer into a no-op.
+      if self.CP.flags & SubaruFlags.LKAS_ENABLE_REQUIRED:
+        ret.invalidLkasSetting = cp_cam.vl["ES_LKAS_State"]["LKAS_Dash_State"] == 0
       self.es_brake_msg = copy.copy(cp_es_brake.vl["ES_Brake"])
 
       # TODO: Hybrid cars don't have ES_Distance, need a replacement

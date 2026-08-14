@@ -103,6 +103,12 @@ class SubaruFlags(IntFlag):
   # as granted, so faking that field hides the real reason steering does nothing.
   HUD_PRESERVE_STATE = 512
 
+  # The EPS only acts on our angle command while the car reports lane keeping as
+  # granted (ES_LKAS_State->LKAS_Dash_State != 0). Without it openpilot engages,
+  # commands steering and is silently ignored, which reads to the driver as
+  # engaged-but-not-steering. Surface it instead.
+  LKAS_ENABLE_REQUIRED = 1024
+
 
 GLOBAL_ES_ADDR = 0x787
 GEN2_ES_BUTTONS_DID = b'\x11\x30'
@@ -255,7 +261,7 @@ class CAR(Platforms):
     CarSpecs(mass=1806, wheelbase=2.746, steerRatio=15.5, tireStiffnessFactor=0.75),
     {Bus.pt: 'subaru_global_2026_generated'},
     flags=SubaruFlags.LKAS_ANGLE | SubaruFlags.THROTTLE_ON_ALT_BUS | SubaruFlags.ANGLE_ALT_POSITION |
-          SubaruFlags.HUD_PRESERVE_STATE,
+          SubaruFlags.HUD_PRESERVE_STATE | SubaruFlags.LKAS_ENABLE_REQUIRED,
   )
 
 
