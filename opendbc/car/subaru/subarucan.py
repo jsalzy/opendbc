@@ -67,15 +67,12 @@ def create_es_distance(packer, frame, es_distance_msg, bus, pcm_cancel_cmd, long
   return packer.make_can_msg("ES_Distance", bus, values)
 
 
-def create_es_lkas_state(packer, frame, es_lkas_state_msg, enabled, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart, passthrough=False):
-  # Diagnostic: reproduce the camera's message untouched.
-  # Copy every signal the DBC defines, so nothing unnamed gets zeroed on repack.
-  if passthrough:
+def create_es_lkas_state(packer, frame, es_lkas_state_msg, enabled, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart, preserve_state=False):
+  if preserve_state:
+    # Copy every signal the DBC defines, so nothing unnamed is zeroed on repack
     values = dict(es_lkas_state_msg)
-    values["COUNTER"] = frame % 0x10
-    return packer.make_can_msg("ES_LKAS_State", CanBus.main, values)
-
-  values = {s: es_lkas_state_msg[s] for s in [
+  else:
+   values = {s: es_lkas_state_msg[s] for s in [
     "CHECKSUM",
     "LKAS_Alert_Msg",
     "Signal1",
@@ -126,27 +123,28 @@ def create_es_lkas_state(packer, frame, es_lkas_state_msg, enabled, visual_alert
     elif right_lane_depart:
       values["LKAS_Alert"] = 11  # Right lane departure dash alert
 
-  if enabled:
-    values["LKAS_ACTIVE"] = 1  # Show LKAS lane lines
-    values["LKAS_Dash_State"] = 2  # Green enabled indicator
-  else:
-    values["LKAS_Dash_State"] = 0  # LKAS Not enabled
+  # LKAS_Dash_State reports whether the car has granted lane keeping, and the EPS only
+  # acts on our angle command while it is non-zero. Overwriting it makes the dash claim
+  # LKAS is active on a car whose LKAS switch is off, which hides the real reason
+  # steering does nothing. Leave the car's own state alone.
+  if not preserve_state:
+    if enabled:
+      values["LKAS_ACTIVE"] = 1  # Show LKAS lane lines
+      values["LKAS_Dash_State"] = 2  # Green enabled indicator
+    else:
+      values["LKAS_Dash_State"] = 0  # LKAS Not enabled
 
-  values["LKAS_Left_Line_Visible"] = int(left_line)
-  values["LKAS_Right_Line_Visible"] = int(right_line)
+    values["LKAS_Left_Line_Visible"] = int(left_line)
+    values["LKAS_Right_Line_Visible"] = int(right_line)
 
   return packer.make_can_msg("ES_LKAS_State", CanBus.main, values)
 
 
-def create_es_dashstatus(packer, frame, dashstatus_msg, enabled, long_enabled, long_active, lead_visible, passthrough=False):
-  # Diagnostic: reproduce the camera's message untouched. Leaves the steering angle as the only thing openpilot changes.
-  # Copy every signal the DBC defines, so nothing unnamed gets zeroed on repack.
-  if passthrough:
+def create_es_dashstatus(packer, frame, dashstatus_msg, enabled, long_enabled, long_active, lead_visible, preserve_state=False):
+  if preserve_state:
     values = dict(dashstatus_msg)
-    values["COUNTER"] = frame % 0x10
-    return packer.make_can_msg("ES_DashStatus", CanBus.main, values)
-
-  values = {s: dashstatus_msg[s] for s in [
+  else:
+   values = {s: dashstatus_msg[s] for s in [
     "CHECKSUM",
     "PCB_Off",
     "LDW_Off",
@@ -245,16 +243,12 @@ def create_es_status(packer, frame, es_status_msg, long_enabled, long_active, cr
   return packer.make_can_msg("ES_Status", CanBus.main, values)
 
 
-def create_es_infotainment(packer, frame, es_infotainment_msg, visual_alert, passthrough=False):
-  # Diagnostic: reproduce the camera's message untouched.
-  # Copy every signal the DBC defines, so nothing unnamed gets zeroed on repack.
-  if passthrough:
-    values = dict(es_infotainment_msg)
-    values["COUNTER"] = frame % 0x10
-    return packer.make_can_msg("ES_Infotainment", CanBus.main, values)
-
+def create_es_infotainment(packer, frame, es_infotainment_msg, visual_alert, preserve_state=False):
   # Filter stock LKAS disabled and Keep hands on steering wheel OFF alerts
-  values = {s: es_infotainment_msg[s] for s in [
+  if preserve_state:
+    values = dict(es_infotainment_msg)
+  else:
+   values = {s: es_infotainment_msg[s] for s in [
     "CHECKSUM",
     "LKAS_State_Infotainment",
     "LKAS_Blue_Lines",

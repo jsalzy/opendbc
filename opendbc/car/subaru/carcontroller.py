@@ -126,20 +126,20 @@ class CarController(CarControllerBase):
 
     else:
       if self.frame % 10 == 0:
-        hud_passthrough = bool(self.CP.flags & SubaruFlags.HUD_PASSTHROUGH)
+        preserve_state = bool(self.CP.flags & SubaruFlags.HUD_PRESERVE_STATE)
 
         can_sends.append(subarucan.create_es_dashstatus(self.packer, self.frame // 10, CS.es_dashstatus_msg, CC.enabled,
                                                         self.CP.openpilotLongitudinalControl, CC.longActive, hud_control.leadVisible,
-                                                        hud_passthrough))
+                                                        preserve_state))
 
         can_sends.append(subarucan.create_es_lkas_state(self.packer, self.frame // 10, CS.es_lkas_state_msg, CC.enabled, hud_control.visualAlert,
                                                         hud_control.leftLaneVisible, hud_control.rightLaneVisible,
                                                         hud_control.leftLaneDepart, hud_control.rightLaneDepart,
-                                                        hud_passthrough))
+                                                        preserve_state))
 
         if self.CP.flags & SubaruFlags.SEND_INFOTAINMENT:
           can_sends.append(subarucan.create_es_infotainment(self.packer, self.frame // 10, CS.es_infotainment_msg, hud_control.visualAlert,
-                                                            hud_passthrough))
+                                                            preserve_state))
 
       if self.CP.openpilotLongitudinalControl:
         if self.frame % 5 == 0:

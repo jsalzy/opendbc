@@ -97,10 +97,11 @@ class SubaruFlags(IntFlag):
   # Must be kept in sync with the DBC and with the panda's own parsing of this message.
   ANGLE_ALT_POSITION = 256
 
-  # Diagnostic: forward the camera's ES_DashStatus/ES_LKAS_State/ES_Infotainment
-  # untouched, so the steering angle is the only thing openpilot changes on the bus.
-  # Narrows down why the 2026 Outback ignores an otherwise valid angle command.
-  HUD_PASSTHROUGH = 512
+  # Keep the car's own LKAS state in the HUD messages instead of overwriting it, and
+  # copy every DBC signal so unnamed bits survive the repack. Stock alerts are still
+  # filtered. The EPS only acts on our angle command while the car reports lane keeping
+  # as granted, so faking that field hides the real reason steering does nothing.
+  HUD_PRESERVE_STATE = 512
 
 
 GLOBAL_ES_ADDR = 0x787
@@ -254,7 +255,7 @@ class CAR(Platforms):
     CarSpecs(mass=1806, wheelbase=2.746, steerRatio=15.5, tireStiffnessFactor=0.75),
     {Bus.pt: 'subaru_global_2026_generated'},
     flags=SubaruFlags.LKAS_ANGLE | SubaruFlags.THROTTLE_ON_ALT_BUS | SubaruFlags.ANGLE_ALT_POSITION |
-          SubaruFlags.HUD_PASSTHROUGH,
+          SubaruFlags.HUD_PRESERVE_STATE,
   )
 
 
